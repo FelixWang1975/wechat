@@ -30,6 +30,12 @@ type UserInfo struct {
 	Country   string `json:"country"`
 	AvatarURL string `json:"avatarUrl"`
 	Language  string `json:"language"`
+
+    // 手机号
+	PhoneNumber  string `json:"phoneNumber"`
+	PurePhoneNumber  string `json:"purePhoneNumber"`
+	CountryCode  string `json:"countryCode"`
+
 	Watermark struct {
 		Timestamp int64  `json:"timestamp"`
 		AppID     string `json:"appid"`
