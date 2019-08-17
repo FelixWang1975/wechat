@@ -17,8 +17,8 @@ const (
 	getComponentConfigURL   = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_option?component_access_token=%s"
     getAuthPageURL          = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s"
     getAuthMobileURL        = "https://mp.weixin.qq.com/safe/bindcomponent?action=bindcomponent&no_scan=1&component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s#wechat_redirect"
-    modifyDomainUrl         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
-
+    modifyDomainURL         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
+    commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -262,12 +262,13 @@ type ServerDomain struct {
 	UploadDomain    []string `json:"uploaddomain"`
 	DownloadDomain  []string `json:"downloaddomain"`
 }
+// 设置小程序服务器域名
 func (ctx *Context) ModifyDomain(appid string, req map[string]string) (*ServerDomain, error) {
     at, err := ctx.GetAuthrAccessToken(appid)
     if err != nil {
 		return nil, err
     }
-    uri := fmt.Sprintf(modifyDomainUrl, at)
+    uri := fmt.Sprintf(modifyDomainURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
 		return nil, err
@@ -280,5 +281,22 @@ func (ctx *Context) ModifyDomain(appid string, req map[string]string) (*ServerDo
 		return nil, fmt.Errorf("%s Error , errcode=%d , errmsg=%s", "ModifyDomain", ret.ErrCode, ret.ErrMsg)
 	}
     return &ret, nil
+}
+
+// 为授权的小程序帐号上传小程序代码
+func (ctx *Context) Commit(appid string, req map[string]string) (error) {
+    at, err := ctx.GetAuthrAccessToken(appid)
+    if err != nil {
+		return err
+    }
+    uri := fmt.Sprintf(commitURL, at)
+    body, err := util.PostJSON(uri, req)
+    if err != nil {
+		return err
+    }
+    if err := util.DecodeWithCommonError(body, "Commit"); err != nil {
+        return err
+    }
+    return nil
 }
 
