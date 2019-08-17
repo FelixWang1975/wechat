@@ -15,6 +15,7 @@ const (
 	refreshTokenURL         = "https://api.weixin.qq.com/cgi-bin/component/api_authorizer_token?component_access_token=%s"
 	getComponentInfoURL     = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_info?component_access_token=%s"
 	getComponentConfigURL   = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_option?component_access_token=%s"
+    getAuthPageURL          = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -58,6 +59,12 @@ func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAcce
 
 // GetPreCode 获取预授权码
 func (ctx *Context) GetPreCode() (string, error) {
+	preCodeCacheKey := fmt.Sprintf("pre_code_token_%s", ctx.AppID)
+	val := ctx.Cache.Get(preCodeCacheKey)
+	if val != nil {
+		return val.(string), nil
+	}
+
 	cat, err := ctx.GetComponentAccessToken()
 	if err != nil {
 		return "", err
@@ -73,12 +80,25 @@ func (ctx *Context) GetPreCode() (string, error) {
 
 	var ret struct {
 		PreCode string `json:"pre_auth_code"`
+        ExpiresIn   int64  `json:"expires_in"`
 	}
 	if err := json.Unmarshal(body, &ret); err != nil {
 		return "", err
 	}
+	expires := ret.ExpiresIn - 120
+	ctx.Cache.Set(preCodeCacheKey, ret.PreCode, time.Duration(expires)*time.Second)
 
 	return ret.PreCode, nil
+}
+
+// 获取授权注册页面地址
+func (ctx *Context) GetAuthPageUri(redirectUri string, auth_type string) (string, error) {
+	preAuthCode, err := ctx.GetPreCode()
+	if err != nil {
+		return "", err
+	}
+	uri := fmt.Sprintf(getAuthPageURL, ctx.AppID, preAuthCode, redirectUri, auth_type)
+	return uri, nil
 }
 
 // ID 微信返回接口中各种类型字段
