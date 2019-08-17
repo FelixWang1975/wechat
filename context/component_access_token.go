@@ -16,6 +16,7 @@ const (
 	getComponentInfoURL     = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_info?component_access_token=%s"
 	getComponentConfigURL   = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_option?component_access_token=%s"
     getAuthPageURL          = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s"
+    getAuthMobileURL        = "https://mp.weixin.qq.com/safe/bindcomponent?action=bindcomponent&no_scan=1&component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s#wechat_redirect"
 )
 
 // ComponentAccessToken 第三方平台
@@ -92,12 +93,22 @@ func (ctx *Context) GetPreCode() (string, error) {
 }
 
 // 获取授权注册页面地址
-func (ctx *Context) GetAuthPageUri(redirectUri string, auth_type string) (string, error) {
+func (ctx *Context) GetAuthPageUri(redirectUri string, authType string) (string, error) {
 	preAuthCode, err := ctx.GetPreCode()
 	if err != nil {
 		return "", err
 	}
-	uri := fmt.Sprintf(getAuthPageURL, ctx.AppID, preAuthCode, redirectUri, auth_type)
+	uri := fmt.Sprintf(getAuthPageURL, ctx.AppID, preAuthCode, redirectUri, authType)
+	return uri, nil
+}
+
+// 获取授权移动端链接地址
+func (ctx *Context) GetAuthMobileUri(redirectUri string, authType string) (string, error) {
+	preAuthCode, err := ctx.GetPreCode()
+	if err != nil {
+		return "", err
+	}
+	uri := fmt.Sprintf(getAuthMobileURL, ctx.AppID, preAuthCode, redirectUri, authType)
 	return uri, nil
 }
 
