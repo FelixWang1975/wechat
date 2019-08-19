@@ -219,10 +219,15 @@ func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
 func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
 	authrTokenKey := "authorizer_access_token_" + appid
 	val := ctx.Cache.Get(authrTokenKey)
-	if val == nil {
-		return "", fmt.Errorf("cannot get authorizer %s access token", appid)
+	if val != nil {
+		return val.(string), nil
 	}
-	return val.(string), nil
+    at, err := ctx.RefreshAuthrToken(appid)
+	if err != nil {
+		return "", err
+	}
+
+	return at.AccessToken, nil
 }
 
 // AuthorizerInfo 授权方详细信息
