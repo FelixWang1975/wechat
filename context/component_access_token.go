@@ -29,13 +29,18 @@ type ComponentAccessToken struct {
 }
 
 // GetComponentAccessToken 获取 ComponentAccessToken
-func (ctx *Context) GetComponentAccessToken() (string, error) {
+func (ctx *Context) GetComponentAccessToken(verifyTicket string) (string, error) {
 	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
 	val := ctx.Cache.Get(accessTokenCacheKey)
-	if val == nil {
-		return "", fmt.Errorf("cann't get component access token")
+	if val != nil {
+		return val.(string), nil
 	}
-	return val.(string), nil
+
+    cat, err := ctx.SetComponentAccessToken(verifyTicket)
+	if err != nil {
+		return "", err
+	}
+	return cat.AccessToken, nil
 }
 
 // SetComponentAccessToken 通过component_verify_ticket 获取 ComponentAccessToken
@@ -69,7 +74,7 @@ func (ctx *Context) GetPreCode() (string, error) {
 		return val.(string), nil
 	}
 
-	cat, err := ctx.GetComponentAccessToken()
+	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return "", err
 	}
@@ -141,7 +146,7 @@ type AuthrAccessToken struct {
 
 // QueryAuthCode 使用授权码换取公众号或小程序的接口调用凭据和授权信息
 func (ctx *Context) QueryAuthCode(authCode string) (*AuthBaseInfo, error) {
-	cat, err := ctx.GetComponentAccessToken()
+	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +174,7 @@ func (ctx *Context) QueryAuthCode(authCode string) (*AuthBaseInfo, error) {
 
 // RefreshAuthrToken 获取（刷新）授权公众号或小程序的接口调用凭据（令牌）
 func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessToken, error) {
-	cat, err := ctx.GetComponentAccessToken()
+	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +232,7 @@ type AuthorizerInfo struct {
 
 // GetAuthrInfo 获取授权方的帐号基本信息
 func (ctx *Context) GetAuthrInfo(appid string) (*AuthorizerInfo, *AuthBaseInfo, error) {
-	cat, err := ctx.GetComponentAccessToken()
+	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, nil, err
 	}
