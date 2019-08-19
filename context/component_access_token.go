@@ -169,11 +169,23 @@ func (ctx *Context) QueryAuthCode(authCode string) (*AuthBaseInfo, error) {
 		return nil, err
 	}
 
+	refreshTokenCacheKey := fmt.Sprintf("authorizer_refresh_token_%s", ret.Info.AuthrAccessToken.Appid)
+	ctx.Cache.Set(refreshTokenCacheKey, ret.Info.AuthrAccessToken.RefreshToken, time.Hour*24)
+
+	authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", ret.Info.AuthrAccessToken.Appid)
+	ctx.Cache.Set(authrTokenCacheKey, ret.Info.AuthrAccessToken.AccessToken, time.Minute*80)
+
 	return ret.Info, nil
 }
 
 // RefreshAuthrToken 获取（刷新）授权公众号或小程序的接口调用凭据（令牌）
-func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessToken, error) {
+func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
+	refreshTokenCacheKey := fmt.Sprintf("authorizer_refresh_token_%s", appid)
+	refreshToken := ctx.Cache.Get(refreshTokenCacheKey)
+	if refreshToken == nil {
+		return nil, fmt.Errorf("cannot get authorizer %s refresh token", appid)
+	}
+
 	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, err
@@ -182,7 +194,7 @@ func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessT
 	req := map[string]string{
 		"component_appid":          ctx.AppID,
 		"authorizer_appid":         appid,
-		"authorizer_refresh_token": refreshToken,
+		"authorizer_refresh_token": refreshToken.(string),
 	}
 	uri := fmt.Sprintf(refreshTokenURL, cat)
 	body, err := util.PostJSON(uri, req)
@@ -195,8 +207,10 @@ func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessT
 		return nil, err
 	}
 
-	authrTokenKey := "authorizer_access_token_" + appid
-	ctx.Cache.Set(authrTokenKey, ret.AccessToken, time.Minute*80)
+	ctx.Cache.Set(refreshTokenCacheKey, ret.RefreshToken, time.Hour*24)
+
+	authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", appid)
+	ctx.Cache.Set(authrTokenCacheKey, ret.AccessToken, time.Minute*80)
 
 	return ret, nil
 }
