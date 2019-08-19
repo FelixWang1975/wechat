@@ -19,6 +19,7 @@ const (
     getAuthMobileURL        = "https://mp.weixin.qq.com/safe/bindcomponent?action=bindcomponent&no_scan=1&component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s#wechat_redirect"
     modifyDomainURL         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
     commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
+    getQrCodeURL            = "https://api.weixin.qq.com/wxa/get_qrcode?access_token=%s&path=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -300,3 +301,16 @@ func (ctx *Context) Commit(appid string, req map[string]string) (error) {
     return nil
 }
 
+// 获取体验小程序的体验二维码
+func (ctx *Context) GetQrCode(appid string, page string) ([]byte, error) {
+    at, err := ctx.GetAuthrAccessToken(appid)
+    if err != nil {
+		return nil, err
+    }
+    uri := fmt.Sprintf(getQrCodeURL, at, page)
+    body, err := util.HTTPGet(uri)
+    if err != nil {
+        return nil, err
+    }
+    return body, nil
+}
