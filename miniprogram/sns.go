@@ -3,6 +3,7 @@ package miniprogram
 import (
 	"encoding/json"
 	"fmt"
+    "time"
 
 	"github.com/silenceper/wechat/util"
 )
@@ -37,6 +38,9 @@ func (wxa *MiniProgram) Code2Session(jsCode string) (result ResCode2Session, err
 		err = fmt.Errorf("Code2Session error : errcode=%v , errmsg=%v", result.ErrCode, result.ErrMsg)
 		return
 	}
+
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", result.OpenID)
+    wxa.Context.Cache.Set(sessionKeyCacheKey, result.SessionKey, time.Hour*24)
 	return
 }
 
@@ -56,6 +60,17 @@ func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, Component
 		err = fmt.Errorf("Code2Session error : errcode=%v , errmsg=%v", result.ErrCode, result.ErrMsg)
 		return nil, err
 	}
+
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", result.OpenID)
+    wxa.Context.Cache.Set(sessionKeyCacheKey, result.SessionKey, time.Hour*24)
     return &result, nil
 }
 
+func (wxa *MiniProgram) GetSessionKey(OpenID string) (string, error) {
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", OpenID)
+    val := wxa.Context.Cache.Get(sessionKeyCacheKey)
+	if val == nil {
+        return "", fmt.Errorf("cannot get openid: %s session key", OpenID)
+	}
+    return val.(string), nil
+}
