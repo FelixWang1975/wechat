@@ -9,6 +9,7 @@ import (
 
 const (
 	code2SessionURL = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
+    trdLoginUrl     = "https://api.weixin.qq.com/sns/component/jscode2session?appid=%s&js_code=%s&grant_type=authorization_code&component_appid=%s&component_access_token=%s"
 )
 
 // ResCode2Session 登录凭证校验的返回结果
@@ -38,3 +39,23 @@ func (wxa *MiniProgram) Code2Session(jsCode string) (result ResCode2Session, err
 	}
 	return
 }
+
+// 第三方平台代小程序登录
+func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, ComponentAccessToken string) (*ResCode2Session, error) {
+	uri := fmt.Sprintf(trdLoginUrl, wxa.AppID, jsCode, ComponentAppid, ComponentAccessToken)
+    response, err := util.HTTPGet(uri)
+    if err != nil {
+		return nil, err
+	}
+    var result ResCode2Session
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, err
+	}
+	if result.ErrCode != 0 {
+		err = fmt.Errorf("Code2Session error : errcode=%v , errmsg=%v", result.ErrCode, result.ErrMsg)
+		return nil, err
+	}
+    return &result, nil
+}
+
