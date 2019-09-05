@@ -42,7 +42,11 @@ func PostJSON(uri string, obj interface{}) ([]byte, error) {
 	jsonData = bytes.Replace(jsonData, []byte("\\u0026"), []byte("&"), -1)
 
 	body := bytes.NewBuffer(jsonData)
-	response, err := http.Post(uri, "application/json;charset=utf-8", body)
+    tr := &http.Transport{
+        TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+    }
+    client := &http.Client{Transport: tr}
+	response, err := client.Post(uri, "application/json;charset=utf-8", body)
 	if err != nil {
 		return nil, err
 	}
