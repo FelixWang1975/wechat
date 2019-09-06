@@ -18,7 +18,11 @@ import (
 
 //HTTPGet get 请求
 func HTTPGet(uri string) ([]byte, error) {
-	response, err := http.Get(uri)
+    tr := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+    }
+    client := &http.Client{Transport: tr}
+	response, err := client.Get(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +47,7 @@ func PostJSON(uri string, obj interface{}) ([]byte, error) {
 
 	body := bytes.NewBuffer(jsonData)
     tr := &http.Transport{
-        TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
     }
     client := &http.Client{Transport: tr}
 	response, err := client.Post(uri, "application/json;charset=utf-8", body)
