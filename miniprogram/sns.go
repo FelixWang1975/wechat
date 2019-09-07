@@ -1,9 +1,11 @@
 package miniprogram
 
 import (
-	"encoding/json"
 	"fmt"
     "time"
+	"encoding/json"
+    "encoding/hex"
+    "crypto/sha256"
 
 	"github.com/silenceper/wechat/util"
 )
@@ -20,10 +22,11 @@ type ResCode2Session struct {
 	OpenID     string `json:"openid"`      // 用户唯一标识
 	SessionKey string `json:"session_key"` // 会话密钥
 	UnionID    string `json:"unionid"`     // 用户在开放平台的唯一标识符，在满足UnionID下发条件的情况下会返回
+    Hash       string
 }
 
 // Code2Session 登录凭证校验
-func (wxa *MiniProgram) Code2Session(jsCode string) (result ResCode2Session, err error) {
+func (wxa *MiniProgram) Code2Session(jsCode string, hashSalt string) (result ResCode2Session, err error) {
 	urlStr := fmt.Sprintf(code2SessionURL, wxa.AppID, wxa.AppSecret, jsCode)
 	var response []byte
 	response, err = util.HTTPGet(urlStr)
@@ -39,8 +42,12 @@ func (wxa *MiniProgram) Code2Session(jsCode string) (result ResCode2Session, err
 		return
 	}
 
-    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", result.OpenID)
+    hash := sha256.New()
+    hash.Write([]byte(result.OpenID + hashSalt))
+    str := hex.EncodeToString(hash.Sum(nil))
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", str)
     wxa.Context.Cache.Set(sessionKeyCacheKey, result.SessionKey, time.Hour*24)
+    result.Hash = str
 	return
 }
 
