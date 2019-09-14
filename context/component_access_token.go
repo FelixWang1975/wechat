@@ -54,7 +54,7 @@ func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAcce
     if "" == verifyTicket {
         // 用缓存中的 verifyTicket 获取 AccessToken
         verifyTicketCacheKey := fmt.Sprintf("component_verify_ticket_%s", ctx.AppID)
-        verifyTicket := ctx.Cache.Get(verifyTicketCacheKey)
+        verifyTicket = ctx.Cache.Get(verifyTicketCacheKey).(string)
     }
 	body := map[string]string{
 		"component_appid":         ctx.AppID,
