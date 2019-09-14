@@ -30,6 +30,12 @@ type ComponentAccessToken struct {
 
 // GetComponentAccessToken 获取 ComponentAccessToken
 func (ctx *Context) GetComponentAccessToken(verifyTicket string) (string, error) {
+    if "" != verifyTicket {
+        // 更新缓存中的 verifyTicket
+        verifyTicketCacheKey := fmt.Sprintf("component_verify_ticket_%s", ctx.AppID)
+        ctx.Cache.Set(verifyTicketCacheKey, verifyTicket, time.Minute*60)
+    }
+
 	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
 	val := ctx.Cache.Get(accessTokenCacheKey)
 	if val != nil {
@@ -45,6 +51,11 @@ func (ctx *Context) GetComponentAccessToken(verifyTicket string) (string, error)
 
 // SetComponentAccessToken 通过component_verify_ticket 获取 ComponentAccessToken
 func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAccessToken, error) {
+    if "" == verifyTicket {
+        // 用缓存中的 verifyTicket 获取 AccessToken
+        verifyTicketCacheKey := fmt.Sprintf("component_verify_ticket_%s", ctx.AppID)
+        verifyTicket := ctx.Cache.Get(verifyTicketCacheKey)
+    }
 	body := map[string]string{
 		"component_appid":         ctx.AppID,
 		"component_appsecret":     ctx.AppSecret,
@@ -63,6 +74,7 @@ func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAcce
 	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
 	expires := at.ExpiresIn - 1500
 	ctx.Cache.Set(accessTokenCacheKey, at.AccessToken, time.Duration(expires)*time.Second)
+
 	return at, nil
 }
 
