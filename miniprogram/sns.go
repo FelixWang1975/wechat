@@ -26,20 +26,20 @@ type ResCode2Session struct {
 }
 
 // Code2Session 登录凭证校验
-func (wxa *MiniProgram) Code2Session(jsCode string, hashSalt string) (result ResCode2Session, err error) {
-	urlStr := fmt.Sprintf(code2SessionURL, wxa.AppID, wxa.AppSecret, jsCode)
-	var response []byte
-	response, err = util.HTTPGet(urlStr)
+func (wxa *MiniProgram) Code2Session(jsCode string, hashSalt string) (*ResCode2Session, error) {
+	uri := fmt.Sprintf(code2SessionURL, wxa.AppID, wxa.AppSecret, jsCode)
+    response, err := util.HTTPGet(uri)
 	if err != nil {
-		return
+		return nil, err
 	}
+    var result ResCode2Session
 	err = json.Unmarshal(response, &result)
 	if err != nil {
-		return
+		return nil, err
 	}
 	if result.ErrCode != 0 {
 		err = fmt.Errorf("Code2Session error : errcode=%v , errmsg=%v", result.ErrCode, result.ErrMsg)
-		return
+		return nil, err
 	}
 
     hash := sha256.New()
@@ -48,11 +48,11 @@ func (wxa *MiniProgram) Code2Session(jsCode string, hashSalt string) (result Res
     sessionKeyCacheKey := fmt.Sprintf("session_key_%s", str)
     wxa.Context.Cache.Set(sessionKeyCacheKey, result.SessionKey, time.Hour*24)
     result.Hash = str
-	return
+	return &result, nil
 }
 
 // 第三方平台代小程序登录
-func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, ComponentAccessToken string) (*ResCode2Session, error) {
+func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, ComponentAccessToken string, hashSalt string) (*ResCode2Session, error) {
 	uri := fmt.Sprintf(trdLoginUrl, wxa.AppID, jsCode, ComponentAppid, ComponentAccessToken)
     response, err := util.HTTPGet(uri)
     if err != nil {
@@ -68,8 +68,12 @@ func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, Component
 		return nil, err
 	}
 
-    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", result.OpenID)
+    hash := sha256.New()
+    hash.Write([]byte(result.OpenID + hashSalt))
+    str := hex.EncodeToString(hash.Sum(nil))
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", str)
     wxa.Context.Cache.Set(sessionKeyCacheKey, result.SessionKey, time.Hour*24)
+    result.Hash = str
     return &result, nil
 }
 
