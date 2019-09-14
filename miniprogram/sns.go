@@ -77,11 +77,11 @@ func (wxa *MiniProgram) TrdLogin(jsCode string, ComponentAppid string, Component
     return &result, nil
 }
 
-func (wxa *MiniProgram) GetSessionKey(OpenID string) (string, error) {
-    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", OpenID)
+func (wxa *MiniProgram) GetSessionKey(hash string) (string, error) {
+    sessionKeyCacheKey := fmt.Sprintf("session_key_%s", hash)
     val := wxa.Context.Cache.Get(sessionKeyCacheKey)
 	if val == nil {
-        return "", fmt.Errorf("cannot get openid: %s session key", OpenID)
+        return "", fmt.Errorf("cannot get hash: %s session key", hash)
 	}
     return val.(string), nil
 }
