@@ -85,3 +85,11 @@ func (wxa *MiniProgram) GetSessionKey(hash string) (string, error) {
 	}
     return val.(string), nil
 }
+
+func (wxa *MiniProgram) DecryptData(sessionHash string, encryptedData string, iv string) (*UserInfo, error) {
+    sessionKey, err := wxa.GetSessionKey(sessionHash)
+    if err != nil {
+        return nil, err
+	}
+    return wxa.Decrypt(sessionKey, encryptedData, iv)
+}
