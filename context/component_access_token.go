@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+    "errors"
 
 	"github.com/silenceper/wechat/util"
 )
@@ -51,10 +52,14 @@ func (ctx *Context) GetComponentAccessToken(verifyTicket string) (string, error)
 
 // SetComponentAccessToken 通过component_verify_ticket 获取 ComponentAccessToken
 func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAccessToken, error) {
+    var ok bool
     if "" == verifyTicket {
         // 用缓存中的 verifyTicket 获取 AccessToken
         verifyTicketCacheKey := fmt.Sprintf("component_verify_ticket_%s", ctx.AppID)
-        verifyTicket = ctx.Cache.Get(verifyTicketCacheKey).(string)
+        verifyTicket, ok = ctx.Cache.Get(verifyTicketCacheKey).(string)
+        if !ok {
+            return nil, errors.New("Ticket is empty, please check service status.")
+        }
     }
 	body := map[string]string{
 		"component_appid":         ctx.AppID,
