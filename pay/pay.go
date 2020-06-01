@@ -6,6 +6,8 @@ import (
 	"errors"
 	"sort"
 	"strconv"
+    "time"
+    "log"
 
 	"github.com/silenceper/wechat/context"
 	"github.com/silenceper/wechat/util"
@@ -54,6 +56,15 @@ type PreOrder struct {
 	ErrCodeDes string `xml:"err_code_des,omitempty"`
 }
 
+// WxaPayRequest 是 WxaPay 接口的返回，是微信小程序调起支付所需的 接口请求参数
+type WxaPayRequest struct {
+	Timestamp string
+	NonceStr  string
+	Package   string
+	SignType  string
+	PaySign   string
+}
+
 //payRequest 接口请求参数
 type payRequest struct {
 	AppID          string `xml:"appid"`
@@ -86,6 +97,14 @@ func NewPay(ctx *context.Context) *Pay {
 	return &pay
 }
 
+// Sign return str and sign for param
+func (pcf *Pay) Sign(param interface{}) (str, sign string) {
+	bizKey := "&key=" + pcf.PayKey
+	str = orderParam(param, bizKey)
+	sign = util.MD5Sum(str)
+    return
+}
+
 // PrePayOrder return data for invoke wechat payment
 func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 	nonceStr := util.RandomStr(32)
@@ -101,9 +120,9 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 	param["trade_type"] = p.TradeType
 	param["openid"] = p.OpenID
 
-	bizKey := "&key=" + pcf.PayKey
-	str := orderParam(param, bizKey)
-	sign := util.MD5Sum(str)
+    str, sign := pcf.Sign(param)
+    log.Println("PrePayOrder")
+    log.Println(str, sign)
 	request := payRequest{
 		AppID:          pcf.AppID,
 		MchID:          pcf.PayMchID,
@@ -148,6 +167,31 @@ func (pcf *Pay) PrePayID(p *Params) (prePayID string, err error) {
 		err = errors.New("empty prepayid")
 	}
 	prePayID = order.PrePayID
+	return
+}
+
+// WxaPay will return wxa pay request
+func (pcf *Pay) WxaPay(p *Params) (request WxaPayRequest, err error) {
+	prePayID, err := pcf.PrePayID(p)
+	if err != nil {
+		return
+	}
+	nonceStr := util.RandomStr(32)
+	param := make(map[string]string)
+	param["appId"] = pcf.AppID
+	param["nonceStr"] = nonceStr
+	param["package"] = "prepay_id=" + prePayID
+	param["signType"] = "MD5"
+	param["timeStamp"] = strconv.FormatInt(time.Time.Unix(time.Now()), 10)
+	str, sign := pcf.Sign(param)
+    log.Println(str, sign)
+    request = WxaPayRequest{ 
+        Timestamp: param["timeStamp"],
+        NonceStr:  param["nonceStr"],
+        Package:   param["package"],
+        SignType:  param["signType"],
+        PaySign:   sign,
+    }
 	return
 }
 
