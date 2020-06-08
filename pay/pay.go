@@ -29,6 +29,7 @@ type Params struct {
 	OutTradeNo string
 	OpenID     string
 	TradeType  string
+	Attach     string
 }
 
 // Config 是传出用于 jsdk 用的参数
@@ -119,6 +120,7 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 	param["total_fee"] = p.TotalFee
 	param["trade_type"] = p.TradeType
 	param["openid"] = p.OpenID
+	param["attach"] = p.Attach
 
     str, sign := pcf.Sign(param)
     log.Println("PrePayOrder")
@@ -135,6 +137,7 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 		NotifyURL:      pcf.PayNotifyURL,
 		TradeType:      p.TradeType,
 		OpenID:         p.OpenID,
+		Attach:         p.Attach,
 	}
 	rawRet, err := util.PostXML(payGateway, request)
 	if err != nil {
