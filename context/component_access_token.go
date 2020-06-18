@@ -117,6 +117,12 @@ func (ctx *Context) GetPreCode() (string, error) {
 	return ret.PreCode, nil
 }
 
+// 清除预授权码
+func (ctx *Context) ClearPreCode() error {
+	preCodeCacheKey := fmt.Sprintf("pre_code_token_%s", ctx.AppID)
+	return ctx.Cache.Delete(preCodeCacheKey)
+}
+
 // 获取授权注册页面地址
 func (ctx *Context) GetAuthPageUri(redirectUri string, authType string) (string, error) {
 	preAuthCode, err := ctx.GetPreCode()
@@ -161,8 +167,9 @@ type AuthrAccessToken struct {
 	RefreshToken string `json:"authorizer_refresh_token"`
 }
 
-// QueryAuthCode 使用授权码换取公众号或小程序的接口调用凭据和授权信息
+// QueryAuthCode 使用授权码换取公众号或小程序的接口调用凭据和授权信息, 并清除预授权码
 func (ctx *Context) QueryAuthCode(authCode string) (*AuthBaseInfo, error) {
+    ctx.ClearPreCode() // 清除预授权码
 	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, err
