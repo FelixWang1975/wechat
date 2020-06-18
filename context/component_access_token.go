@@ -312,7 +312,7 @@ type ServerDomain struct {
 	DownloadDomain  []string `json:"downloaddomain"`
 }
 // 设置小程序服务器域名
-func (ctx *Context) ModifyDomain(appid string, req map[string]string) (*ServerDomain, error) {
+func (ctx *Context) ModifyDomain(appid string, req map[string]interface{}) (*ServerDomain, error) {
     at, err := ctx.GetAuthrAccessToken(appid)
     if err != nil {
 		return nil, err
