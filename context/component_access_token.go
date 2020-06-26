@@ -255,6 +255,11 @@ func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
 }
 
 // AuthorizerInfo 授权方详细信息
+type mpInfo struct {
+    Network interface{} `json:"network"`
+    Categories interface{} `json:"categories"`
+    VisitStatus int `json:"visit_status"`
+}
 type AuthorizerInfo struct {
 	NickName        string `json:"nick_name"`
 	HeadImg         string `json:"head_img"`
@@ -271,6 +276,7 @@ type AuthorizerInfo struct {
 	}
 	Alias     string `json:"alias"`
 	QrcodeURL string `json:"qrcode_url"`
+	Miniprograminfo mpInfo `json:"miniprograminfo"`
 }
 
 // GetAuthrInfo 获取授权方的帐号基本信息
