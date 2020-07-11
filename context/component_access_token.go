@@ -21,6 +21,7 @@ const (
     modifyDomainURL         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
     commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
     getQrCodeURL            = "https://api.weixin.qq.com/wxa/get_qrcode?access_token=%s&path=%s"
+    submitAuditURL          = "https://api.weixin.qq.com/wxa/submit_audit?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -373,4 +374,38 @@ func (ctx *Context) GetQrCode(appid string, page string) ([]byte, error) {
         return nil, err
     }
     return body, nil
+}
+
+// 为授权的小程序上传的代码 提交审核
+func (ctx *Context) SubmitAudit(token, appid string, req map[string]string) (int64, error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return 0, err
+        }
+    } else {
+        at = token
+    }
+    uri := fmt.Sprintf(submitAuditURL, at)
+    body, err := util.PostJSON(uri, req)
+    if err != nil {
+		return 0, err
+    }
+    fmt.Println("body:", string(body))
+
+	var ret struct {
+        ErrCode int64  `json:"errcode"`
+        ErrMsg  string `json:"errmsg"`
+		Auditid int64  `json:"auditid"`
+	}
+	if err := json.Unmarshal(body, &ret); err != nil {
+		return 0, err
+	}
+	if ret.ErrCode != 0 {
+        return 0, errors.New(ret.ErrMsg)
+	}
+
+    return ret.Auditid, nil
 }
