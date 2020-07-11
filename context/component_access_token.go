@@ -339,10 +339,16 @@ func (ctx *Context) ModifyDomain(appid string, req map[string]interface{}) (*Ser
 }
 
 // 为授权的小程序帐号上传小程序代码
-func (ctx *Context) Commit(appid string, req map[string]string) (error) {
-    at, err := ctx.GetAuthrAccessToken(appid)
-    if err != nil {
-		return err
+func (ctx *Context) Commit(token, appid string, req map[string]string) (error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return err
+        }
+    } else {
+        at = token
     }
     uri := fmt.Sprintf(commitURL, at)
     body, err := util.PostJSON(uri, req)
