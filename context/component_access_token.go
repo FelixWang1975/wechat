@@ -22,12 +22,22 @@ const (
     commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
     getQrCodeURL            = "https://api.weixin.qq.com/wxa/get_qrcode?access_token=%s&path=%s"
     submitAuditURL          = "https://api.weixin.qq.com/wxa/submit_audit?access_token=%s"
+    getAuditStatusURL       = "https://api.weixin.qq.com/wxa/get_auditstatus?access_token=%s"
+    getLatestAuditStatusURL = "https://api.weixin.qq.com/wxa/get_latest_auditstatus?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
 type ComponentAccessToken struct {
 	AccessToken string `json:"component_access_token"`
 	ExpiresIn   int64  `json:"expires_in"`
+}
+
+// AuditStatus 审核状态结果
+type AuditStatus struct {
+    Pass bool
+    Message string
+    AuditId int64
+    ScreenShot string
 }
 
 // GetComponentAccessToken 获取 ComponentAccessToken
@@ -146,7 +156,7 @@ func (ctx *Context) GetAuthMobileUri(redirectUri string, authType string) (strin
 
 // ID 微信返回接口中各种类型字段
 type ID struct {
-	ID int `json:"id"`
+	ID int64 `json:"id"`
 }
 
 // AuthBaseInfo 授权的基本信息
@@ -259,7 +269,7 @@ func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
 type mpInfo struct {
     Network interface{} `json:"network"`
     Categories interface{} `json:"categories"`
-    VisitStatus int `json:"visit_status"`
+    VisitStatus int64 `json:"visit_status"`
 }
 type AuthorizerInfo struct {
 	NickName        string `json:"nick_name"`
@@ -414,4 +424,71 @@ func (ctx *Context) SubmitAudit(token, appid string, req map[string]string) (int
 	}
 
     return ret.Auditid, nil
+}
+
+// 查询审核状态
+func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status AuditStatus, err error) {
+    var at string
+    var body []byte
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return
+        }
+    } else {
+        at = token
+    }
+    if auditid == 0 {
+        // 查询最新一次提交的审核状态
+        uri := fmt.Sprintf(getLatestAuditStatusURL, at)
+        body, err = util.HTTPGet(uri)
+    } else {
+        // 查询指定发布审核单的审核状态
+        uri := fmt.Sprintf(getAuditStatusURL, at)
+        req := map[string]int64{
+            "auditid": auditid,
+        }
+        body, err = util.PostJSON(uri, req)
+    }
+    if err != nil {
+        return
+    }
+    fmt.Println("body:", string(body))
+
+	var ret struct {
+        ErrCode    int64  `json:"errcode"`
+        ErrMsg     string `json:"errmsg"`
+		Auditid    int64  `json:"auditid"`
+        Status     int64  `json:"status"`
+        Reason     string `json:"reason"`
+		ScreenShot string `json:"screenshot"`
+	}
+	if err = json.Unmarshal(body, &ret); err != nil {
+		return
+	}
+	if ret.ErrCode != 0 {
+        err = errors.New(ret.ErrMsg)
+		return
+	}
+
+    if ret.Auditid != 0 {
+        status.AuditId = ret.Auditid // 查询最新一次提交的审核状态, 会返回对应的 Auditid
+    } else {
+        status.AuditId = auditid
+    }
+    status.ScreenShot = ret.ScreenShot
+
+    switch ret.Status {
+    case 0:
+        status.Pass = true
+    case 1:
+        status.Message = "审核被拒绝，拒绝原因："+ret.Reason
+    case 2:
+        status.Message = "审核中"
+    case 3:
+        status.Message = "已撤回"
+    case 4:
+        status.Message = "审核延后，延后原因："+ret.Reason
+    }
+    return
 }
