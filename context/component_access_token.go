@@ -363,10 +363,16 @@ func (ctx *Context) Commit(token, appid string, req map[string]string) (error) {
 }
 
 // 获取体验小程序的体验二维码
-func (ctx *Context) GetQrCode(appid string, page string) ([]byte, error) {
-    at, err := ctx.GetAuthrAccessToken(appid)
-    if err != nil {
-		return nil, err
+func (ctx *Context) GetQrCode(token, appid string, page string) ([]byte, error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        at = token
     }
     uri := fmt.Sprintf(getQrCodeURL, at, page)
     body, err := util.HTTPGet(uri)
