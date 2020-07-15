@@ -24,6 +24,7 @@ const (
     submitAuditURL          = "https://api.weixin.qq.com/wxa/submit_audit?access_token=%s"
     getAuditStatusURL       = "https://api.weixin.qq.com/wxa/get_auditstatus?access_token=%s"
     getLatestAuditStatusURL = "https://api.weixin.qq.com/wxa/get_latest_auditstatus?access_token=%s"
+    releaseURL              = "https://api.weixin.qq.com/wxa/release?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -492,3 +493,27 @@ func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status A
     }
     return
 }
+
+// 发布最后一个审核通过的小程序代码版本
+func (ctx *Context) Release(token, appid string, req map[string]string) (error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return err
+        }
+    } else {
+        at = token
+    }
+    uri := fmt.Sprintf(releaseURL, at)
+    body, err := util.PostJSON(uri, req)
+    if err != nil {
+		return err
+    }
+    if err := util.DecodeWithCommonError(body, "Release"); err != nil {
+        return err
+    }
+    return nil
+}
+
