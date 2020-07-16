@@ -292,11 +292,17 @@ type AuthorizerInfo struct {
 }
 
 // GetAuthrInfo 获取授权方的帐号基本信息
-func (ctx *Context) GetAuthrInfo(appid string) (*AuthorizerInfo, *AuthBaseInfo, error) {
-	cat, err := ctx.GetComponentAccessToken("")
-	if err != nil {
-		return nil, nil, err
-	}
+func (ctx *Context) GetAuthrInfo(token, appid string) (*AuthorizerInfo, *AuthBaseInfo, error) {
+    var cat string
+    var err error
+    if token == "" {
+        cat, err = ctx.GetComponentAccessToken("")
+        if err != nil {
+            return nil, nil, err
+        }
+    } else {
+        cat = token
+    }
 
 	req := map[string]string{
 		"component_appid":  ctx.AppID,
