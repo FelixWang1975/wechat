@@ -336,10 +336,16 @@ type ServerDomain struct {
 	DownloadDomain  []string `json:"downloaddomain"`
 }
 // 设置小程序服务器域名
-func (ctx *Context) ModifyDomain(appid string, req map[string]interface{}) (*ServerDomain, error) {
-    at, err := ctx.GetAuthrAccessToken(appid)
-    if err != nil {
-		return nil, err
+func (ctx *Context) ModifyDomain(token, appid string, req map[string]interface{}) (*ServerDomain, error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        at = token
     }
     uri := fmt.Sprintf(modifyDomainURL, at)
     body, err := util.PostJSON(uri, req)
