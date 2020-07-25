@@ -18,6 +18,8 @@ const (
 	getComponentConfigURL   = "https://api.weixin.qq.com/cgi-bin/component/api_get_authorizer_option?component_access_token=%s"
     getAuthPageURL          = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s"
     getAuthMobileURL        = "https://mp.weixin.qq.com/safe/bindcomponent?action=bindcomponent&no_scan=1&component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s#wechat_redirect"
+    getTemplateListURL        = "https://api.weixin.qq.com/wxa/gettemplatelist?access_token=%s"
+    // 以下access_token 为 AuthrAccessToken
     modifyDomainURL         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
     commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
     getQrCodeURL            = "https://api.weixin.qq.com/wxa/get_qrcode?access_token=%s&path=%s"
@@ -324,6 +326,45 @@ func (ctx *Context) GetAuthrInfo(token, appid string) (*AuthorizerInfo, *AuthBas
 	}
 
 	return ret.AuthorizerInfo, ret.AuthorizationInfo, nil
+}
+
+// 获取代码模板列表
+type Template struct {
+	CreateTime  int64 `json:"create_time"`
+	UserVersion string `json:"user_version"`
+	UserDesc    string `json:"user_desc"`
+	TemplateId  int64 `json:"template_id"`
+}
+type TemplateList struct {
+	ErrCode      int64  `json:"errcode"`
+	ErrMsg       string `json:"errmsg"`
+    TemplateList []Template `json:"template_list"`
+}
+func (ctx *Context) GetTemplateList(token string) ([]Template, error) {
+    var cat string
+    var err error
+    var ret TemplateList
+    if token == "" {
+        cat, err = ctx.GetComponentAccessToken("")
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        cat = token
+    }
+    uri := fmt.Sprintf(getTemplateListURL, cat)
+    body, err := util.HTTPGet(uri)
+    if err != nil {
+        return nil, err
+    }
+	if err = json.Unmarshal(body, &ret); err != nil {
+        return nil, err
+	}
+	if ret.ErrCode != 0 {
+        err = errors.New(ret.ErrMsg)
+		return nil, err
+	}
+    return ret.TemplateList, nil
 }
 
 // ServerDomain 服务器域名
