@@ -37,6 +37,7 @@ type ComponentAccessToken struct {
 
 // AuditStatus 审核状态结果
 type AuditStatus struct {
+    Finish bool
     Pass bool
     Message string
     AuditId int64
@@ -534,12 +535,15 @@ func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status A
 
     switch ret.Status {
     case 0:
+        status.Finish = true
         status.Pass = true
     case 1:
+        status.Finish = true
         status.Message = "审核被拒绝，拒绝原因："+ret.Reason
     case 2:
         status.Message = "审核中"
     case 3:
+        status.Finish = true
         status.Message = "已撤回"
     case 4:
         status.Message = "审核延后，延后原因："+ret.Reason
