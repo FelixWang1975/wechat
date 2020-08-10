@@ -28,6 +28,7 @@ const (
     getLatestAuditStatusURL = "https://api.weixin.qq.com/wxa/get_latest_auditstatus?access_token=%s"
     releaseURL              = "https://api.weixin.qq.com/wxa/release?access_token=%s"
     changeVisitStatusURL    = "https://api.weixin.qq.com/wxa/change_visitstatus?access_token=%s"
+    revertCodeReleaseURL    = "https://api.weixin.qq.com/wxa/revertcoderelease?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -575,7 +576,6 @@ func (ctx *Context) Release(token, appid string, req map[string]string) (error) 
     return nil
 }
 
-
 // 修改小程序线上代码的可见状态
 func (ctx *Context) ChangeVisitStatus(token, appid string, req map[string]string) (error) {
     var at string
@@ -594,6 +594,29 @@ func (ctx *Context) ChangeVisitStatus(token, appid string, req map[string]string
 		return err
     }
     if err := util.DecodeWithCommonError(body, "ChangeVisitStatus"); err != nil {
+        return err
+    }
+    return nil
+}
+
+// 将小程序的线上版本进行回退
+func (ctx *Context) RevertCodeRelease(token, appid string) (error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return err
+        }
+    } else {
+        at = token
+    }
+    uri := fmt.Sprintf(revertCodeReleaseURL, at)
+    body, err := util.HTTPGet(uri)
+    if err != nil {
+		return err
+    }
+    if err := util.DecodeWithCommonError(body, "RevertCodeRelease"); err != nil {
         return err
     }
     return nil
