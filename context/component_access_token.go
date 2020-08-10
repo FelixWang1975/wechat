@@ -29,6 +29,7 @@ const (
     releaseURL              = "https://api.weixin.qq.com/wxa/release?access_token=%s"
     changeVisitStatusURL    = "https://api.weixin.qq.com/wxa/change_visitstatus?access_token=%s"
     revertCodeReleaseURL    = "https://api.weixin.qq.com/wxa/revertcoderelease?access_token=%s"
+    setSupportVersionURL    = "https://api.weixin.qq.com/cgi-bin/wxopen/setweappsupportversion?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -617,6 +618,29 @@ func (ctx *Context) RevertCodeRelease(token, appid string) (error) {
 		return err
     }
     if err := util.DecodeWithCommonError(body, "RevertCodeRelease"); err != nil {
+        return err
+    }
+    return nil
+}
+
+// 设置最低基础库版本
+func (ctx *Context) SetSupportVersion(token, appid string, req map[string]string) (error) {
+    var at string
+    var err error
+    if token == "" {
+        at, err = ctx.GetAuthrAccessToken(appid)
+        if err != nil {
+            return err
+        }
+    } else {
+        at = token
+    }
+    uri := fmt.Sprintf(setSupportVersionURL, at)
+    body, err := util.PostJSON(uri, req)
+    if err != nil {
+		return err
+    }
+    if err := util.DecodeWithCommonError(body, "setSupportVersion"); err != nil {
         return err
     }
     return nil
