@@ -102,17 +102,24 @@ func (ctx *Context) SetComponentAccessToken(verifyTicket string) (*ComponentAcce
 }
 
 // GetPreCode 获取预授权码
-func (ctx *Context) GetPreCode() (string, error) {
-	preCodeCacheKey := fmt.Sprintf("pre_code_token_%s", ctx.AppID)
-	val := ctx.Cache.Get(preCodeCacheKey)
-	if val != nil {
-		return val.(string), nil
-	}
+func (ctx *Context) GetPreCode(token string) (string, error) {
+    preCodeCacheKey := fmt.Sprintf("pre_code_token_%s", ctx.AppID)
+    val := ctx.Cache.Get(preCodeCacheKey)
+    if val != nil {
+        return val.(string), nil
+    }
 
-	cat, err := ctx.GetComponentAccessToken("")
-	if err != nil {
-		return "", err
-	}
+    var cat string
+    var err error
+    if token == "" {
+        cat, err = ctx.GetComponentAccessToken("")
+        if err != nil {
+            return "", err
+        }
+    } else {
+        cat = token
+    }
+
 	req := map[string]string{
 		"component_appid": ctx.AppID,
 	}
@@ -142,8 +149,8 @@ func (ctx *Context) ClearPreCode() error {
 }
 
 // 获取授权注册页面地址
-func (ctx *Context) GetAuthPageUri(redirectUri string, authType string) (string, error) {
-	preAuthCode, err := ctx.GetPreCode()
+func (ctx *Context) GetAuthPageUri(token string, redirectUri string, authType string) (string, error) {
+	preAuthCode, err := ctx.GetPreCode(token)
 	if err != nil {
 		return "", err
 	}
@@ -152,8 +159,8 @@ func (ctx *Context) GetAuthPageUri(redirectUri string, authType string) (string,
 }
 
 // 获取授权移动端链接地址
-func (ctx *Context) GetAuthMobileUri(redirectUri string, authType string) (string, error) {
-	preAuthCode, err := ctx.GetPreCode()
+func (ctx *Context) GetAuthMobileUri(token string, redirectUri string, authType string) (string, error) {
+	preAuthCode, err := ctx.GetPreCode(token)
 	if err != nil {
 		return "", err
 	}
@@ -186,12 +193,19 @@ type AuthrAccessToken struct {
 }
 
 // QueryAuthCode 使用授权码换取公众号或小程序的接口调用凭据和授权信息, 并清除预授权码
-func (ctx *Context) QueryAuthCode(authCode string) (*AuthBaseInfo, error) {
+func (ctx *Context) QueryAuthCode(token, authCode string) (*AuthBaseInfo, error) {
     ctx.ClearPreCode() // 清除预授权码
-	cat, err := ctx.GetComponentAccessToken("")
-	if err != nil {
-		return nil, err
-	}
+
+    var cat string
+    var err error
+    if token == "" {
+        cat, err = ctx.GetComponentAccessToken("")
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        cat = token
+    }
 
 	req := map[string]string{
 		"component_appid":    ctx.AppID,
