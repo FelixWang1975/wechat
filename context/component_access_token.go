@@ -19,7 +19,7 @@ const (
     getAuthPageURL          = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s"
     getAuthMobileURL        = "https://mp.weixin.qq.com/safe/bindcomponent?action=bindcomponent&no_scan=1&component_appid=%s&pre_auth_code=%s&redirect_uri=%s&auth_type=%s#wechat_redirect"
     getTemplateListURL      = "https://api.weixin.qq.com/wxa/gettemplatelist?access_token=%s"
-    fastRegisterWeappURL    = "https://api.weixin.qq.com/cgi-bin/component/fastregisterweapp?action=create&component_access_token=%s"
+    fastRegisterWeappURL    = "https://api.weixin.qq.com/cgi-bin/component/fastregisterweapp?action=%s&component_access_token=%s"
     // 以下access_token 为 AuthrAccessToken
     modifyDomainURL         = "https://api.weixin.qq.com/wxa/modify_domain?access_token=%s"
     commitURL               = "https://api.weixin.qq.com/wxa/commit?access_token=%s"
@@ -662,23 +662,22 @@ func (ctx *Context) SetSupportVersion(token, appid string, req map[string]string
 }
 
 // 快速创建小程序
-func (ctx *Context) FastRegisterWeapp(token string, req map[string]string) error {
+func (ctx *Context) FastRegisterWeapp(token string, action string, req map[string]string) (isFinish bool, err error) {
     var cat string
-    var err error
     if token == "" {
         cat, err = ctx.GetComponentAccessToken("")
         if err != nil {
-            return err
+            return
         }
     } else {
         cat = token
     }
-    
-    uri := fmt.Sprintf(fastRegisterWeappURL, cat)
-    body, err := util.PostJSON(uri, req)
 
+    uri := fmt.Sprintf(fastRegisterWeappURL, action, cat)
+    var body []byte
+    body, err = util.PostJSON(uri, req)
     if err != nil {
-        return err
+        return
     }
     fmt.Println("body:", string(body))
 
@@ -687,35 +686,46 @@ func (ctx *Context) FastRegisterWeapp(token string, req map[string]string) error
         ErrMsg     string `json:"errmsg"`
 	}
 	if err = json.Unmarshal(body, &ret); err != nil {
-		return err
+		return
 	}
 
     switch ret.ErrCode {
     case 0:
-        return nil
+        isFinish = true
     case -1:
-        return errors.New("非法 action 参数")
-    case 89249:
-        return errors.New("该主体已有任务执行中，距上次任务 24h 后再试")
-    case 89247:
-        return errors.New("内部错误")
-    case 86004:
-        return errors.New("无效微信号")
+        isFinish = true
+        err = errors.New("非法 action 参数")
     case 61070:
-        return errors.New("法人姓名与微信号不一致")
+        isFinish = true
+        err = errors.New("法人姓名与微信号不一致")
+    case 86004:
+        isFinish = true
+        err = errors.New("无效微信号")
+    case 89247:
+        isFinish = true
+        err = errors.New("内部错误")
     case 89248:
-        return errors.New("企业代码类型无效，请选择正确类型填写")
+        isFinish = true
+        err = errors.New("企业代码类型无效，请选择正确类型填写")
+    case 89249:
+        isFinish = true
+        err = errors.New("该主体已有任务执行中，距上次任务 24h 后再试")
     case 89250:
-        return errors.New("未找到该任务")
+        isFinish = true
+        err = errors.New("未找到该任务")
     case 89251:
-        return errors.New("待法人人脸核身校验")
+        err = errors.New("待法人人脸核身校验")
     case 89252:
-        return errors.New("法人&企业信息一致性校验中")
+        err = errors.New("法人&企业信息一致性校验中")
     case 89253:
-        return errors.New("缺少参数")
+        isFinish = true
+        err = errors.New("缺少参数")
     case 89254:
-        return errors.New("第三方权限集不全，补全权限集全网发布后生效")
+        isFinish = true
+        err = errors.New("第三方权限集不全，补全权限集全网发布后生效")
     default:
-        return errors.New(ret.ErrMsg)
+        err = errors.New(ret.ErrMsg)
     }
+
+    return
 }
