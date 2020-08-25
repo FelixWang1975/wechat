@@ -147,6 +147,7 @@ func (srv *Server) getMessage() (interface{}, error) {
 			return nil, fmt.Errorf("从body中解析xml失败, err=%v", err)
 		}
 	}
+    fmt.Println("XMLMsg:", string(rawXMLMsgBytes))
 
 	srv.requestRawXMLMsg = rawXMLMsgBytes
 

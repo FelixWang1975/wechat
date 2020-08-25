@@ -134,6 +134,20 @@ type MixMessage struct {
 	AuthorizationCodeExpiredTime int64    `xml:"AuthorizationCodeExpiredTime"`
 	PreAuthCode                  string   `xml:"PreAuthCode"`
 
+    // 快速创建小程序
+	FastAppid              string   `xml:"appid"`
+	FastStatus             string   `xml:"status"`
+	AuthCode               string   `xml:"auth_code"`
+	Msg                    string   `xml:"msg"`
+	Info                   struct {
+	    Name               string   `xml:"name"`
+	    Code               string   `xml:"code"`
+	    CodeType           string   `xml:"code_type"`
+	    LegalPersonaWechat string   `xml:"legal_persona_wechat"`
+	    LegalPersonaName   string   `xml:"legal_persona_name"`
+	    ComponentPhone     string   `xml:"component_phone"`
+    }`xml:"info"`
+
 	// 卡券相关
 	CardID              string `xml:"CardId"`
 	RefuseReason        string `xml:"RefuseReason"`
