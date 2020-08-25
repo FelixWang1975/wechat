@@ -711,7 +711,6 @@ func (ctx *Context) FastRegisterWeapp(token string, action string, req map[strin
         isFinish = true
         err = errors.New("该主体已有任务执行中，距上次任务 24h 后再试")
     case 89250:
-        isFinish = true
         err = errors.New("未找到该任务")
     case 89251:
         err = errors.New("待法人人脸核身校验")
