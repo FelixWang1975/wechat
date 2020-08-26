@@ -217,6 +217,7 @@ func (ctx *Context) QueryAuthCode(token, authCode string) (*AuthBaseInfo, error)
 	if err != nil {
 		return nil, err
 	}
+    fmt.Println("body:", string(body))
 
 	var ret struct {
 		Info *AuthBaseInfo `json:"authorization_info"`
