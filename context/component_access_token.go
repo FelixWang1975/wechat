@@ -227,9 +227,6 @@ func (ctx *Context) QueryAuthCode(token, authCode string) (*AuthBaseInfo, error)
 		return nil, err
 	}
 
-	refreshTokenCacheKey := fmt.Sprintf("authorizer_refresh_token_%s", ret.Info.AuthrAccessToken.Appid)
-	ctx.Cache.Set(refreshTokenCacheKey, ret.Info.AuthrAccessToken.RefreshToken, time.Hour*24)
-
 	authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", ret.Info.AuthrAccessToken.Appid)
 	ctx.Cache.Set(authrTokenCacheKey, ret.Info.AuthrAccessToken.AccessToken, time.Minute*80)
 
@@ -237,13 +234,7 @@ func (ctx *Context) QueryAuthCode(token, authCode string) (*AuthBaseInfo, error)
 }
 
 // RefreshAuthrToken 获取（刷新）授权公众号或小程序的接口调用凭据（令牌）
-func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
-	refreshTokenCacheKey := fmt.Sprintf("authorizer_refresh_token_%s", appid)
-	refreshToken := ctx.Cache.Get(refreshTokenCacheKey)
-	if refreshToken == nil {
-		return nil, fmt.Errorf("cannot get authorizer %s refresh token", appid)
-	}
-
+func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessToken, error) {
 	cat, err := ctx.GetComponentAccessToken("")
 	if err != nil {
 		return nil, err
@@ -252,7 +243,7 @@ func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
 	req := map[string]string{
 		"component_appid":          ctx.AppID,
 		"authorizer_appid":         appid,
-		"authorizer_refresh_token": refreshToken.(string),
+		"authorizer_refresh_token": refreshToken,
 	}
 	uri := fmt.Sprintf(refreshTokenURL, cat)
 	body, err := util.PostJSON(uri, req)
@@ -265,8 +256,6 @@ func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
 		return nil, err
 	}
 
-	ctx.Cache.Set(refreshTokenCacheKey, ret.RefreshToken, time.Hour*24)
-
 	authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", appid)
 	ctx.Cache.Set(authrTokenCacheKey, ret.AccessToken, time.Minute*80)
 
@@ -274,13 +263,13 @@ func (ctx *Context) RefreshAuthrToken(appid string) (*AuthrAccessToken, error) {
 }
 
 // GetAuthrAccessToken 获取授权方AccessToken
-func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
+func (ctx *Context) GetAuthrAccessToken(appid, refreshToken string) (string, error) {
 	authrTokenKey := "authorizer_access_token_" + appid
 	val := ctx.Cache.Get(authrTokenKey)
 	if val != nil {
 		return val.(string), nil
 	}
-    at, err := ctx.RefreshAuthrToken(appid)
+    at, err := ctx.RefreshAuthrToken(appid, refreshToken)
 	if err != nil {
 		return "", err
 	}
@@ -398,16 +387,7 @@ type ServerDomain struct {
 }
 // 设置小程序服务器域名
 func (ctx *Context) ModifyDomain(token, appid string, req map[string]interface{}) (*ServerDomain, error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return nil, err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(modifyDomainURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
@@ -425,16 +405,7 @@ func (ctx *Context) ModifyDomain(token, appid string, req map[string]interface{}
 
 // 为授权的小程序帐号上传小程序代码
 func (ctx *Context) Commit(token, appid string, req map[string]string) (error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(commitURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
@@ -448,16 +419,7 @@ func (ctx *Context) Commit(token, appid string, req map[string]string) (error) {
 
 // 获取体验小程序的体验二维码
 func (ctx *Context) GetQrCode(token, appid string, page string) ([]byte, error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return nil, err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(getQrCodeURL, at, page)
     body, err := util.HTTPGet(uri)
     if err != nil {
@@ -468,16 +430,7 @@ func (ctx *Context) GetQrCode(token, appid string, page string) ([]byte, error) 
 
 // 为授权的小程序上传的代码 提交审核
 func (ctx *Context) SubmitAudit(token, appid string, req map[string]string) (int64, error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return 0, err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(submitAuditURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
@@ -502,16 +455,8 @@ func (ctx *Context) SubmitAudit(token, appid string, req map[string]string) (int
 
 // 查询审核状态
 func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status AuditStatus, err error) {
-    var at string
+    at := token
     var body []byte
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return
-        }
-    } else {
-        at = token
-    }
     if auditid == 0 {
         // 查询最新一次提交的审核状态
         uri := fmt.Sprintf(getLatestAuditStatusURL, at)
@@ -572,16 +517,7 @@ func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status A
 
 // 发布最后一个审核通过的小程序代码版本
 func (ctx *Context) Release(token, appid string, req map[string]string) (error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(releaseURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
@@ -595,16 +531,7 @@ func (ctx *Context) Release(token, appid string, req map[string]string) (error) 
 
 // 修改小程序线上代码的可见状态
 func (ctx *Context) ChangeVisitStatus(token, appid string, req map[string]string) (error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(changeVisitStatusURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
@@ -618,16 +545,7 @@ func (ctx *Context) ChangeVisitStatus(token, appid string, req map[string]string
 
 // 将小程序的线上版本进行回退
 func (ctx *Context) RevertCodeRelease(token, appid string) (error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(revertCodeReleaseURL, at)
     body, err := util.HTTPGet(uri)
     if err != nil {
@@ -641,16 +559,7 @@ func (ctx *Context) RevertCodeRelease(token, appid string) (error) {
 
 // 设置最低基础库版本
 func (ctx *Context) SetSupportVersion(token, appid string, req map[string]string) (error) {
-    var at string
-    var err error
-    if token == "" {
-        at, err = ctx.GetAuthrAccessToken(appid)
-        if err != nil {
-            return err
-        }
-    } else {
-        at = token
-    }
+    at := token
     uri := fmt.Sprintf(setSupportVersionURL, at)
     body, err := util.PostJSON(uri, req)
     if err != nil {
