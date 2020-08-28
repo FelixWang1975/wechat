@@ -29,6 +29,7 @@ type Params struct {
 	OutTradeNo string
 	OpenID     string
 	TradeType  string
+    ProductID  string
 	Attach     string
 }
 
@@ -119,6 +120,7 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 	param["spbill_create_ip"] = p.CreateIP
 	param["total_fee"] = p.TotalFee
 	param["trade_type"] = p.TradeType
+	param["product_id"] = p.ProductID
 	param["openid"] = p.OpenID
 	param["attach"] = p.Attach
 
@@ -136,6 +138,7 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 		SpbillCreateIP: p.CreateIP,
 		NotifyURL:      pcf.PayNotifyURL,
 		TradeType:      p.TradeType,
+		ProductID:      p.ProductID,
 		OpenID:         p.OpenID,
 		Attach:         p.Attach,
 	}
@@ -157,6 +160,19 @@ func (pcf *Pay) PrePayOrder(p *Params) (payOrder PreOrder, err error) {
 		return
 	}
 	err = errors.New("[msg : xmlUnmarshalError] [rawReturn : " + string(rawRet) + "] [params : " + str + "] [sign : " + sign + "]")
+	return
+}
+
+// CodeURL will request wechat merchant api and request for a pre payment order codeURL
+func (pcf *Pay) CodeURL(p *Params) (codeURL string, err error) {
+	order, err := pcf.PrePayOrder(p)
+	if err != nil {
+		return
+	}
+	if order.CodeURL == "" {
+		err = errors.New("empty codeURL")
+	}
+	codeURL = order.CodeURL
 	return
 }
 
