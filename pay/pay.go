@@ -14,6 +14,7 @@ import (
 )
 
 var payGateway = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+var payQueryURL = "https://api.mch.weixin.qq.com/pay/orderquery"
 
 // Pay struct extends context
 type Pay struct {
@@ -91,6 +92,42 @@ type payRequest struct {
 	LimitPay       string `xml:"limit_pay,omitempty"`   //
 	OpenID         string `xml:"openid,omitempty"`      //用户标识
 	SceneInfo      string `xml:"scene_info,omitempty"`  //场景信息
+}
+
+// payQuery 接口请求参数
+type queryRequest struct {
+	AppID          string `xml:"appid"`
+	MchID          string `xml:"mch_id"`
+	OutTradeNo     string `xml:"out_trade_no"`          //商户订单号
+	NonceStr       string `xml:"nonce_str"`
+	Sign           string `xml:"sign"`
+	SignType       string `xml:"sign_type,omitempty"`
+}
+
+// QueryResult 是 payQuery 接口的返回
+type QueryResult struct {
+	ReturnCode     string `xml:"return_code"`      // 返回状态码: SUCCESS/FAIL
+	ReturnMsg      string `xml:"return_msg"`       // 返回信息，如非空，为错误原因
+	Appid          string `xml:"appid"`            // 小程序ID
+	MchId          string `xml:"mch_id"`           // 商户号
+	NonceStr       string `xml:"nonce_str"`        // 随机字符串
+	Sign           string `xml:"sign"`             // 签名
+	ResultCode     string `xml:"result_code"`      // 业务结果: SUCCESS/FAIL
+	ErrCode        string `xml:"err_code"`         // 错误代码
+	ErrCodeDes     string `xml:"err_code_des"`     // 错误代码描述
+	Openid         string `xml:"openid"`           // 用户标识
+	IsSubscribe    string `xml:"is_subscribe"`     // 是否关注公众账号
+	TradeType      string `xml:"trade_type"`       // 交易类型
+    TradeState     string `xml:"trade_state"`      // 交易状态: SUCCESS—支付成功 REFUND—转入退款 NOTPAY—未支付 CLOSED—已关闭 REVOKED—已撤销（刷卡支付） USERPAYING--用户支付中 PAYERROR--支付失败(其他原因，如银行返回失败)
+	BankType       string `json:"bank_type"`       // 付款银行
+	TotalFee       string `xml:"total_fee"`        // 订单金额
+	FeeType        string `xml:"fee_type"`         // 货币种类
+	CashFee        string `json:"cash_fee"`        // 现金支付金额
+	TransactionId  string `xml:"transaction_id"`   // 微信支付订单号
+	OutTradeNo     string `xml:"out_trade_no"`     // 商户订单号
+	Attach         string `xml:"attach"`           // 商家数据包: 统一下单时提交 uid:oid
+	TimeEnd        string `xml:"time_end"`         // 支付完成时间
+	TradeStateDesc string `xml:"trade_state_desc"` // 交易状态描述
 }
 
 // NewPay return an instance of Pay package
@@ -211,6 +248,46 @@ func (pcf *Pay) WxaPay(p *Params) (request WxaPayRequest, err error) {
         SignType:  param["signType"],
         PaySign:   sign,
     }
+	return
+}
+
+// PayQuery return queryResult
+func (pcf *Pay) PayQuery(p *Params) (queryResult QueryResult, xmlBody []byte, err error) {
+	nonceStr := util.RandomStr(32)
+	param := make(map[string]interface{})
+	param["appid"] = pcf.AppID
+	param["mch_id"] = pcf.PayMchID
+	param["out_trade_no"] = p.OutTradeNo
+	param["nonce_str"] = nonceStr
+
+    str, sign := pcf.Sign(param)
+    log.Println("PayQuery")
+    log.Println(str, sign)
+	request := queryRequest{
+		AppID:          pcf.AppID,
+		MchID:          pcf.PayMchID,
+		OutTradeNo:     p.OutTradeNo,
+		NonceStr:       nonceStr,
+		Sign:           sign,
+	}
+	xmlBody, err = util.PostXML(payQueryURL, request)
+	if err != nil {
+		return
+	}
+	err = xml.Unmarshal(xmlBody, &queryResult)
+	if err != nil {
+		return
+	}
+	if queryResult.ReturnCode == "SUCCESS" {
+		//query success
+		if queryResult.ResultCode == "SUCCESS" {
+			err = nil
+			return
+		}
+		err = errors.New(queryResult.ErrCode + queryResult.ErrCodeDes)
+		return
+	}
+	err = errors.New("[msg : xmlUnmarshalError] [rawReturn : " + string(xmlBody) + "] [params : " + str + "] [sign : " + sign + "]")
 	return
 }
 
