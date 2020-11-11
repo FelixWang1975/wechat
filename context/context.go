@@ -30,6 +30,9 @@ type Context struct {
 
 	//accessTokenFunc 自定义获取 access token 的方法
 	accessTokenFunc GetAccessTokenFunc
+
+	// AuthrAccessToken为授权方的 AccessToken, 仅用于第三方平台
+	AuthrAccessToken string
 }
 
 // Query returns the keyed url query value if it exists
