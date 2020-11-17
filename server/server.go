@@ -67,7 +67,11 @@ func (srv *Server) Serve() error {
 	//debug
 	//fmt.Println("request msg = ", string(srv.requestRawXMLMsg))
 
-	return srv.buildResponse(response)
+	err = srv.buildResponse(response)
+	if err != nil {
+		return err
+	}
+	return srv.Send()
 }
 
 //Validate 校验请求是否合法
@@ -217,6 +221,10 @@ func (srv *Server) buildResponse(reply *message.Reply) (err error) {
 
 //Send 将自定义的消息发送
 func (srv *Server) Send() (err error) {
+	if srv.responseMsg == nil {
+		srv.String("success")
+		return
+	}
 	replyMsg := srv.responseMsg
 	if srv.isSafeMode {
 		//安全模式下对消息进行加密
