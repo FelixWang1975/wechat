@@ -1,0 +1,211 @@
+package customer
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/silenceper/wechat/context"
+	"github.com/silenceper/wechat/util"
+)
+
+const (
+	messageSendURL = "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=%s"
+)
+
+//Customer 客服
+type Customer struct {
+	*context.Context
+}
+
+//NewCustomer 实例化
+func NewCustomer(context *context.Context) *Customer {
+	customer := new(Customer)
+	customer.Context = context
+	return customer
+}
+
+// MsgType 基本消息类型
+type MsgType string
+
+const (
+	//MsgTypeText 表示文本消息
+	MsgTypeText MsgType = "text"
+	//MsgTypeImage 表示图片消息
+	MsgTypeImage = "image"
+	//MsgTypeVoice 表示语音消息
+	MsgTypeVoice = "voice"
+	//MsgTypeVideo 表示视频消息
+	MsgTypeVideo = "video"
+	//MsgTypeMiniprogrampage 表示小程序卡片消息
+	MsgTypeMiniprogrampage = "miniprogrampage"
+	//MsgTypeShortVideo 表示短视频消息[限接收]
+	MsgTypeShortVideo = "shortvideo"
+	//MsgTypeLocation 表示坐标消息[限接收]
+	MsgTypeLocation = "location"
+	//MsgTypeLink 表示链接消息[限接收]
+	MsgTypeLink = "link"
+	//MsgTypeMusic 表示音乐消息[限回复]
+	MsgTypeMusic = "music"
+	//MsgTypeNews 表示图文消息[限回复]
+	MsgTypeNews = "news"
+	//MsgTypeTransfer 表示消息消息转发到客服
+	MsgTypeTransfer = "transfer_customer_service"
+	//MsgTypeEvent 表示事件推送消息
+	MsgTypeEvent = "event"
+)
+
+//CustomerMessage  客服消息
+type CustomerMessage struct {
+	ToUser          string                `json:"touser"`                    //接受者OpenID
+	Msgtype         MsgType               `json:"msgtype"`                   //客服消息类型
+	Text            *MediaText            `json:"text,omitempty"`            //可选
+	Image           *MediaResource        `json:"image,omitempty"`           //可选
+	Voice           *MediaResource        `json:"voice,omitempty"`           //可选
+	Video           *MediaVideo           `json:"video,omitempty"`           //可选
+	Music           *MediaMusic           `json:"music,omitempty"`           //可选
+	News            *MediaNews            `json:"news,omitempty"`            //可选
+	Mpnews          *MediaResource        `json:"mpnews,omitempty"`          //可选
+	Wxcard          *MediaWxcard          `json:"wxcard,omitempty"`          //可选
+	Msgmenu         *MediaMsgmenu         `json:"msgmenu,omitempty"`         //可选
+	Miniprogrampage *MediaMiniprogrampage `json:"miniprogrampage,omitempty"` //可选
+}
+
+//NewCustomerTextMessage 文本消息结构体构造方法
+func NewCustomerTextMessage(toUser, text string) *CustomerMessage {
+	return &CustomerMessage{
+		ToUser:  toUser,
+		Msgtype: MsgTypeText,
+		Text: &MediaText{
+			text,
+		},
+	}
+}
+
+//NewCustomerImgMessage 图片消息的构造方法
+func NewCustomerImgMessage(toUser, mediaID string) *CustomerMessage {
+	return &CustomerMessage{
+		ToUser:  toUser,
+		Msgtype: MsgTypeImage,
+		Image: &MediaResource{
+			mediaID,
+		},
+	}
+}
+
+//NewCustomerVoiceMessage 语音消息的构造方法
+func NewCustomerVoiceMessage(toUser, mediaID string) *CustomerMessage {
+	return &CustomerMessage{
+		ToUser:  toUser,
+		Msgtype: MsgTypeVoice,
+		Voice: &MediaResource{
+			mediaID,
+		},
+	}
+}
+
+//NewCustomerMiniprogrampageMessage 小程序卡片消息的构造方法
+func NewCustomerMiniprogrampageMessage(toUser, title, appID, pagePath, thumbMediaID string) *CustomerMessage {
+	return &CustomerMessage{
+		ToUser:  toUser,
+		Msgtype: MsgTypeMiniprogrampage,
+		Miniprogrampage: &MediaMiniprogrampage{
+			Title:        title,
+			AppID:        appID,
+			Pagepath:     pagePath,
+			ThumbMediaID: thumbMediaID,
+		},
+	}
+}
+
+//MediaText 文本消息的文字
+type MediaText struct {
+	Content string `json:"content"`
+}
+
+//MediaResource  消息使用的永久素材id
+type MediaResource struct {
+	MediaID string `json:"media_id"`
+}
+
+//MediaVideo 视频消息包含的内容
+type MediaVideo struct {
+	MediaID      string `json:"media_id"`
+	ThumbMediaID string `json:"thumb_media_id"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+}
+
+//MediaMusic 音乐消息包括的内容
+type MediaMusic struct {
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Musicurl     string `json:"musicurl"`
+	Hqmusicurl   string `json:"hqmusicurl"`
+	ThumbMediaID string `json:"thumb_media_id"`
+}
+
+//MediaNews 图文消息的内容
+type MediaNews struct {
+	Articles []MediaArticles `json:"articles"`
+}
+
+//MediaArticles 图文消息的内容的文章列表中的单独一条
+type MediaArticles struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+	Picurl      string `json:"picurl"`
+}
+
+//MediaMsgmenu 菜单消息的内容
+type MediaMsgmenu struct {
+	HeadContent string        `json:"head_content"`
+	List        []MsgmenuItem `json:"list"`
+	TailContent string        `json:"tail_content"`
+}
+
+//MsgmenuItem 菜单消息的菜单按钮
+type MsgmenuItem struct {
+	ID      string `json:"id"`
+	Content string `json:"content"`
+}
+
+//MediaWxcard 卡券的id
+type MediaWxcard struct {
+	CardID string `json:"card_id"`
+}
+
+//MediaMiniprogrampage 小程序消息
+type MediaMiniprogrampage struct {
+	Title        string `json:"title"`
+	AppID        string `json:"appid"`
+	Pagepath     string `json:"pagepath"`
+	ThumbMediaID string `json:"thumb_media_id"`
+}
+
+
+//Send 发送客服消息
+func (customer *Customer) Send(msg *CustomerMessage) error {
+	var accessToken string
+	accessToken, err := customer.GetAccessToken()
+	if err != nil {
+		return err
+	}
+	uri := fmt.Sprintf(messageSendURL, accessToken)
+	response, err := util.PostJSON(uri, msg)
+	if err != nil {
+		return err
+	}
+
+	var result util.CommonError
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return err
+	}
+	if result.ErrCode != 0 {
+		err = fmt.Errorf("customer msg send error : errcode=%v , errmsg=%v", result.ErrCode, result.ErrMsg)
+		return err
+	}
+
+	return nil
+}
