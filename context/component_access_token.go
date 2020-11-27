@@ -31,6 +31,7 @@ const (
     changeVisitStatusURL    = "https://api.weixin.qq.com/wxa/change_visitstatus?access_token=%s"
     revertCodeReleaseURL    = "https://api.weixin.qq.com/wxa/revertcoderelease?access_token=%s"
     setSupportVersionURL    = "https://api.weixin.qq.com/cgi-bin/wxopen/setweappsupportversion?access_token=%s"
+	getMaterialURL          = "https://api.weixin.qq.com/cgi-bin/material/get_material?access_token=%s"
 )
 
 // ComponentAccessToken 第三方平台
@@ -513,6 +514,21 @@ func (ctx *Context) GetAuditStatus(token, appid string, auditid int64) (status A
         status.Message = "审核延后，延后原因："+ret.Reason
     }
     return
+}
+
+// 获取审核截图
+func (ctx *Context) GetAuditScreenShot(token, mediaid string) ([]byte, error) {
+	at := token
+	uri := fmt.Sprintf(getMaterialURL, at)
+	var req struct {
+		MediaID string `json:"media_id"`
+	}
+	req.MediaID = mediaid
+	body, err := util.PostJSON(uri, req)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 // 发布最后一个审核通过的小程序代码版本
