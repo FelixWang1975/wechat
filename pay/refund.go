@@ -16,7 +16,6 @@ type RefundParams struct {
 	TotalFee      string
 	RefundFee     string
 	RefundDesc    string
-	RootCa        string //ca证书
 }
 
 //refundRequest 接口请求参数
@@ -31,7 +30,7 @@ type refundRequest struct {
 	TotalFee      string `xml:"total_fee"`
 	RefundFee     string `xml:"refund_fee"`
 	RefundDesc    string `xml:"refund_desc,omitempty"`
-	//NotifyUrl     string `xml:"notify_url,omitempty"`
+	NotifyURL     string `xml:"notify_url,omitempty"`
 }
 
 //RefundResponse 接口返回
@@ -65,6 +64,7 @@ func (pcf *Pay) Refund(p *RefundParams) (rsp RefundResponse, err error) {
 	param["appid"] = pcf.AppID
 	param["mch_id"] = pcf.PayMchID
 	param["nonce_str"] = nonceStr
+	param["notify_url"] = pcf.RefundNotifyURL
 	param["out_refund_no"] = p.OutRefundNo
 	param["refund_desc"] = p.RefundDesc
 	param["refund_fee"] = p.RefundFee
@@ -86,8 +86,9 @@ func (pcf *Pay) Refund(p *RefundParams) (rsp RefundResponse, err error) {
 		TotalFee:      p.TotalFee,
 		RefundFee:     p.RefundFee,
 		RefundDesc:    p.RefundDesc,
+		NotifyURL:     pcf.RefundNotifyURL,
 	}
-	rawRet, err := util.PostXMLWithTLS(refundGateway, request, p.RootCa, pcf.PayMchID)
+	rawRet, err := util.PostXMLWithTLS(refundGateway, request, pcf.PayCa, pcf.PayMchID)
 	if err != nil {
 		return
 	}

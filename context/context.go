@@ -9,13 +9,15 @@ import (
 
 // Context struct
 type Context struct {
-	AppID          string
-	AppSecret      string
-	Token          string
-	EncodingAESKey string
-	PayMchID       string
-	PayNotifyURL   string
-	PayKey         string
+	AppID           string
+	AppSecret       string
+	Token           string
+	EncodingAESKey  string
+	PayMchID        string
+	PayNotifyURL    string
+	RefundNotifyURL string
+	PayKey          string
+	PayCa           string
 
 	Cache cache.Cache
 
