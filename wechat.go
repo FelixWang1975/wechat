@@ -34,7 +34,7 @@ type Config struct {
 	PayNotifyURL    string //支付 - 接受微信支付结果通知的接口地址
 	RefundNotifyURL string //退款 - 接受微信退款结果通知的接口地址
 	PayKey          string //支付 - 商户后台设置的支付 key
-	PayCa           string //支付 - 商户后台申请的证书
+	PayCa           []byte //支付 - 商户后台申请的证书
 	Cache           cache.Cache
 }
 

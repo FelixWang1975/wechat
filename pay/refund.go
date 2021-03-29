@@ -88,7 +88,7 @@ func (pcf *Pay) Refund(p *RefundParams) (rsp RefundResponse, err error) {
 		RefundDesc:    p.RefundDesc,
 		NotifyURL:     pcf.RefundNotifyURL,
 	}
-	rawRet, err := util.PostXMLWithTLS(refundGateway, request, pcf.PayCa, pcf.PayMchID)
+	rawRet, err := util.PostXMLWithCa(refundGateway, request, pcf.PayCa, pcf.PayMchID)
 	if err != nil {
 		return
 	}

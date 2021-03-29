@@ -7,21 +7,22 @@ import (
 	"encoding/pem"
 	"encoding/xml"
 	"fmt"
-	"golang.org/x/crypto/pkcs12"
 	"io"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
+
+	"golang.org/x/crypto/pkcs12"
 )
 
 //HTTPGet get 请求
 func HTTPGet(uri string) ([]byte, error) {
-    tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
-    client := &http.Client{Transport: tr}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	response, err := client.Get(uri)
 	if err != nil {
 		return nil, err
@@ -46,10 +47,10 @@ func PostJSON(uri string, obj interface{}) ([]byte, error) {
 	jsonData = bytes.Replace(jsonData, []byte("\\u0026"), []byte("&"), -1)
 
 	body := bytes.NewBuffer(jsonData)
-    tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
-    client := &http.Client{Transport: tr}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	response, err := client.Post(uri, "application/json;charset=utf-8", body)
 	if err != nil {
 		return nil, err
@@ -169,15 +170,15 @@ func PostXML(uri string, obj interface{}) ([]byte, error) {
 
 	body := bytes.NewBuffer(xmlData)
 
-    tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
-    client := &http.Client{Transport: tr}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
 	response, err := client.Post(uri, "application/xml;charset=utf-8", body)
 	if err != nil {
 		return nil, err
-    }
+	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
@@ -194,6 +195,21 @@ func httpWithTLS(rootCa, key string) (*http.Client, error) {
 		return nil, fmt.Errorf("unable to find cert path=%s, error=%v", rootCa, err)
 	}
 	cert := pkcs12ToPem(certData, key)
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	tr := &http.Transport{
+		TLSClientConfig:    config,
+		DisableCompression: true,
+	}
+	client = &http.Client{Transport: tr}
+	return client, nil
+}
+
+//httpWithCa，直接传递证书
+func httpWithCa(ca []byte, key string) (*http.Client, error) {
+	var client *http.Client
+	cert := pkcs12ToPem(ca, key)
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 	}
@@ -236,6 +252,30 @@ func PostXMLWithTLS(uri string, obj interface{}, ca, key string) ([]byte, error)
 
 	body := bytes.NewBuffer(xmlData)
 	client, err := httpWithTLS(ca, key)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Post(uri, "application/xml;charset=utf-8", body)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http code error : uri=%v , statusCode=%v", uri, response.StatusCode)
+	}
+	return ioutil.ReadAll(response.Body)
+}
+
+//PostXMLWithCa perform a HTTP/POST request with XML body and Ca
+func PostXMLWithCa(uri string, obj interface{}, ca []byte, key string) ([]byte, error) {
+	xmlData, err := xml.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	body := bytes.NewBuffer(xmlData)
+	client, err := httpWithCa(ca, key)
 	if err != nil {
 		return nil, err
 	}

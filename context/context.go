@@ -17,7 +17,7 @@ type Context struct {
 	PayNotifyURL    string
 	RefundNotifyURL string
 	PayKey          string
-	PayCa           string
+	PayCa           []byte
 
 	Cache cache.Cache
 
