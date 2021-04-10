@@ -237,6 +237,7 @@ func (ctx *Context) QueryAuthCode(token, authCode string) (*AuthBaseInfo, error)
 // RefreshAuthrToken 获取（刷新）授权公众号或小程序的接口调用凭据（令牌）
 func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessToken, error) {
 	cat, err := ctx.GetComponentAccessToken("")
+    fmt.Println("cat:", cat)
 	if err != nil {
 		return nil, err
 	}
@@ -251,16 +252,21 @@ func (ctx *Context) RefreshAuthrToken(appid, refreshToken string) (*AuthrAccessT
 	if err != nil {
 		return nil, err
 	}
+    fmt.Println("body:", string(body))
 
 	ret := &AuthrAccessToken{}
 	if err := json.Unmarshal(body, ret); err != nil {
 		return nil, err
 	}
+    fmt.Println("ret:", ret)
 
-	authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", appid)
-	ctx.Cache.Set(authrTokenCacheKey, ret.AccessToken, time.Minute*80)
+    if ret.AccessToken != "" {
+        authrTokenCacheKey := fmt.Sprintf("authorizer_access_token_%s", appid)
+        ctx.Cache.Set(authrTokenCacheKey, ret.AccessToken, time.Minute*80)
+        return ret, nil
+    }
 
-	return ret, nil
+	return nil, errors.New("can not refresh authorizer access token")
 }
 
 // GetAuthrAccessToken 获取授权方AccessToken
