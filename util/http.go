@@ -212,6 +212,7 @@ func httpWithCa(ca []byte, key string) (*http.Client, error) {
 	cert := pkcs12ToPem(ca, key)
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+        InsecureSkipVerify: true,
 	}
 	tr := &http.Transport{
 		TLSClientConfig:    config,
