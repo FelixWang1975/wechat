@@ -86,11 +86,11 @@ type RefundQueryResult struct {
 	OutTradeNo        string `xml:"out_trade_no"`          // 商户订单号
 	TotalFee          string `xml:"total_fee"`             // 订单金额
 	FeeType           string `xml:"fee_type"`              // 货币种类
-	CashFee           string `json:"cash_fee"`             // 现金支付金额
+	CashFee           string `xml:"cash_fee"`             // 现金支付金额
 	RefundCount       string `xml:"refund_count"`          // 退款笔数
 	OutRefundNo       string `xml:"out_refund_no_0"`       // 商户退款单号
 	RefundId          string `xml:"refund_id_0"`           // 微信退款单号
-	RefundFee         string `json:"refund_fee_0"`         // 申请退款金额
+	RefundFee         string `xml:"refund_fee_0"`         // 申请退款金额
 	RefundStatus      string `xml:"refund_status_0"`       // 退款状态 SUCCESS—退款成功 REFUNDCLOSE—退款关闭 PROCESSING—退款处理中 CHANGE—退款异常，退款到银行发现用户的卡作废或者冻结了，导致原路退款银行卡失败，可前往商户平台（pay.weixin.qq.com）-交易中心，手动处理此笔退款
 	RefundRecvAccout_ string `xml:"refund_recv_accout_0"`  // 退款入账账户
 	RefundSuccessTime string `xml:"refund_success_time_0"` // 退款成功时间
